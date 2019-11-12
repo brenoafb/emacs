@@ -88,6 +88,12 @@
 		    :weight 'normal
 		    :width 'normal)
 
+;; org-drill
+(add-to-list 'load-path "~/.emacs.d/lisp/")
+(require 'org-learn)
+(require 'org-drill)
+(setq org-drill-spaced-repetition-algorithm 'sm2)
+
 ;; evil
 (use-package evil
   :ensure t
@@ -169,11 +175,11 @@
 (use-package haskell-mode
   :ensure t)
 
-(use-package hindent
-  :ensure t
-  :after haskell-mode
-  :config
-  (add-hook 'haskell-mode-hook #'hindent-mode))
+;; (use-package hindent
+;;   :ensure t
+;;   :after haskell-mode
+;;   :config
+;;   (add-hook 'haskell-mode-hook #'hindent-mode))
 
 (use-package markdown-mode
   :ensure t)
