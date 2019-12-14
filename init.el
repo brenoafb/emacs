@@ -89,10 +89,11 @@
 		    :width 'normal)
 
 ;; org-drill
-(add-to-list 'load-path "~/.emacs.d/lisp/")
-(require 'org-learn)
-(require 'org-drill)
-(setq org-drill-spaced-repetition-algorithm 'sm2)
+;;
+;; (add-to-list 'load-path "~/.emacs.d/lisp/")
+;; (require 'org-learn)
+;; (require 'org-drill)
+;; (setq org-drill-spaced-repetition-algorithm 'sm2)
 
 ;; evil
 (use-package evil
@@ -133,7 +134,7 @@
   (add-hook 'after-init-hook #'global-flycheck-mode))
 
 (use-package magit
-  :bind (("C-M-g" . magit-status)))
+  :bind (("C-x g" . magit-status)))
 
 (use-package projectile
   :ensure t
@@ -173,14 +174,20 @@
 
 
 (use-package haskell-mode
+  :ensure t
+  :config
+  (add-hook 'haskell-mode-hook 'interactive-haskell-mode))
+
+(use-package hindent
+  :ensure t
+  :after haskell-mode
+  :config
+  (add-hook 'haskell-mode-hook #'hindent-mode))
+
+(use-package proof-general
   :ensure t)
 
-;; (use-package hindent
-;;   :ensure t
-;;   :after haskell-mode
-;;   :config
-;;   (add-hook 'haskell-mode-hook #'hindent-mode))
-
-(use-package markdown-mode
-  :ensure t)
+(use-package evil-magit
+  :ensure t
+  :after evil magit)
 ;; init.el ends here

@@ -21,7 +21,7 @@
  '(org-agenda-files (quote ("~/Dropbox/org/index.org")))
  '(package-selected-packages
    (quote
-    (haskell-mode haml-mode markdown-mode hindent-mode helm-projectile helm projectile magit flycheck company which-key soothe-theme evil-collection evil undo-tree use-package)))
+    (evil-magit proof-general hindent haskell-mode haml-mode markdown-mode hindent-mode helm-projectile helm projectile magit flycheck company which-key soothe-theme evil-collection evil undo-tree use-package)))
  '(powerline-color1 "#1E1E1E")
  '(powerline-color2 "#111111"))
 (custom-set-faces
