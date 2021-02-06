@@ -14,11 +14,6 @@
 (if (fboundp 'scroll-bar-mode)
     (scroll-bar-mode -1))
 
-;;; Fix this bug:
-;;; https://www.reddit.com/r/emacs/comments/cueoug/the_failed_to_download_gnu_archive_is_a_pretty/
-(when (version< emacs-version "26.3")
-  (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3"))
-
 ;;; Setup package.el
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -32,6 +27,20 @@
 (eval-when-compile
   (require 'use-package))
 (setq use-package-always-ensure t)
+
+;;; Setup straight.el
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+	(url-retrieve-synchronously
+	 "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+	 'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
 
 ;;; Useful Defaults
 (setq-default cursor-type 'bar)           ; Line-style cursor similar to other text editors
@@ -66,13 +75,16 @@
 
 ;;; Avoid littering the user's filesystem with backups
 (setq
-   backup-by-copying t      ; don't clobber symlinks
-   backup-directory-alist
-    '((".*" . "~/.emacs.d/saves/"))    ; don't litter my fs tree
-   delete-old-versions t
-   kept-new-versions 6
-   kept-old-versions 2
-   version-control t)       ; use versioned backups
+ backup-by-copying t      ; don't clobber symlinks
+ backup-directory-alist
+ '((".*" . "~/.emacs.d/saves/"))    ; don't litter my fs tree
+ delete-old-versions t
+ kept-new-versions 6
+ kept-old-versions 2
+ version-control t)       ; use versioned backups
+
+(setq auto-save-file-name-transforms
+      `((".*" ,temporary-file-directory t)))
 
 ;;; Lockfiles unfortunately cause more pain than benefit
 (setq create-lockfiles nil)
@@ -83,11 +95,39 @@
 
 ;; font
 (set-face-attribute 'default nil
-		    :family "xos4 Terminus"
-		    :height 90
+		    :family "Fira Code"
+		    :height 130
 		    :weight 'normal
 		    :width 'normal)
 
+;; orgmode
+;; load org-babel language if needed
+(defadvice org-babel-execute-src-block (around load-language nil activate)
+  "Load language if needed"
+  (let ((language (org-element-property :language (org-element-at-point))))
+    (unless (cdr (assoc (intern language) org-babel-load-languages))
+      (add-to-list 'org-babel-load-languages (cons (intern language) t))
+      (org-babel-do-load-languages 'org-babel-load-languages org-babel-load-languages))
+    ad-do-it))
+
+(setq org-startup-with-inline-images t)
+(setq org-startup-with-latex-preview t)
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
+;; automatically preview latex
+(defun krofna-hack ()
+  (when (looking-back (rx "$ "))
+    (save-excursion
+      (backward-char 1)
+      (org-toggle-latex-fragment))))
+
+(add-hook 'org-mode-hook
+	  (lambda ()
+	    (org-cdlatex-mode)
+	    (add-hook 'post-self-insert-hook #'krofna-hack 'append 'local)))
+(setq org-latex-create-formula-image-program 'dvisvgm)
+
+
+(load-theme 'spacemacs-dark t)
 ;; org-drill
 ;;
 ;; (add-to-list 'load-path "~/.emacs.d/lisp/")
@@ -95,14 +135,26 @@
 ;; (require 'org-drill)
 ;; (setq org-drill-spaced-repetition-algorithm 'sm2)
 
+(use-package undo-fu
+  :config
+  (global-undo-tree-mode -1)
+  (define-key evil-normal-state-map "u" 'undo-fu-only-undo)
+  (define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo))
+
 ;; evil
 (use-package evil
   :ensure t
   :init
   (setq evil-want-integration t)
   (setq evil-want-keybinding nil)
+  (setq evil-undo-system 'undo-fu)
+  (with-eval-after-load 'evil-maps
+    (define-key evil-motion-state-map (kbd "SPC") nil)
+    (define-key evil-motion-state-map (kbd "RET") nil)
+    (define-key evil-motion-state-map (kbd "TAB") nil))
   :config
   (evil-mode 1))
+
 
 (use-package evil-collection
   :after evil
@@ -111,9 +163,11 @@
   (evil-collection-init))
 
 ;; soothe theme
+; (use-package soothe-theme
+;   :ensure t
+;   :init (load-theme 'soothe t))
 (use-package soothe-theme
-  :ensure t
-  :init (load-theme 'soothe t))
+  :ensure t)
 
 (use-package which-key
   :ensure t
@@ -146,26 +200,26 @@
   :config
   (projectile-mode +1))
 
- (use-package helm
-   :ensure t
-   :defer 2
-   :bind
-   ("M-x" . helm-M-x)
-   ("C-x C-f" . helm-find-files)
-   ("M-y" . helm-show-kill-ring)
-   ("C-x b" . helm-mini)
-   :config
-   (require 'helm-config)
-   (helm-mode 1)
-   (setq helm-split-window-inside-p t
-     helm-move-to-line-cycle-in-source t)
-   (setq helm-autoresize-max-height 0)
-   (setq helm-autoresize-min-height 40)
-   (helm-autoresize-mode 1)
-   (define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebind tab to run persistent action
-   (define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ; make TAB work in terminal
-   (define-key helm-map (kbd "C-z")  'helm-select-action) ; list actions using C-z
-   )
+(use-package helm
+  :ensure t
+  :defer 2
+  :bind
+  ("M-x" . helm-M-x)
+  ("C-x C-f" . helm-find-files)
+  ("M-y" . helm-show-kill-ring)
+  ("C-x b" . helm-mini)
+  :config
+  (require 'helm-config)
+  (helm-mode 1)
+  (setq helm-split-window-inside-p t
+	helm-move-to-line-cycle-in-source t)
+  (setq helm-autoresize-max-height 0)
+  (setq helm-autoresize-min-height 40)
+  (helm-autoresize-mode 1)
+  (define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebind tab to run persistent action
+  (define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ; make TAB work in terminal
+  (define-key helm-map (kbd "C-z")  'helm-select-action) ; list actions using C-z
+  )
 
 (use-package helm-projectile
   :ensure t
@@ -184,10 +238,45 @@
   :config
   (add-hook 'haskell-mode-hook #'hindent-mode))
 
-(use-package proof-general
-  :ensure t)
+(use-package emojify
+  :hook (after-init . global-emojify-mode))
 
-(use-package evil-magit
-  :ensure t
-  :after evil magit)
+(use-package pdf-tools
+  :magic ("%PDF" . pdf-view-mode)
+  :config
+  (pdf-tools-install :no-query))
+
+(use-package ob-racket
+  :straight
+  (ob-racket
+   :type git
+   :host github
+   :repo "xchrishawk/ob-racket"))
+
+					; org-fc
+;;  (use-package hydra)
+;;  (use-package org-fc
+;;    :straight
+;;    (org-fc
+;;     :type git :repo "https://git.sr.ht/~l3kn/org-fc"
+;;     :files (:defaults "awk" "demo.org"))
+;;    :custom
+;;    (org-fc-directories '("~/org/"))
+;;    :config
+;;    (require 'org-fc-hydra
+;;    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
+;;    (kbd "RET") 'org-fc-review-flip
+;;    (kbd "n") 'org-fc-review-flip
+;;    (kbd "s") 'org-fc-review-suspend-card
+;;    (kbd "q") 'org-fc-review-quit)
+;;
+;;    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
+;;      (kbd "a") 'org-fc-review-rate-again
+;;      (kbd "h") 'org-fc-review-rate-hard
+;;      (kbd "g") 'org-fc-review-rate-good
+;;      (kbd "e") 'org-fc-review-rate-easy
+;;      (kbd "s") 'org-fc-review-suspend-card
+;;      (kbd "q") 'org-fc-review-quit)
+;;    (setq org-fc-directories '("~/org/"))))
+
 ;; init.el ends here
