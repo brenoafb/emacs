@@ -55,8 +55,8 @@
 	  (if (fboundp 'display-line-numbers-mode)
 	      #'display-line-numbers-mode
 	    #'linum-mode))
-(use-package undo-tree                    ; Enable undo-tree, sane undo/redo behavior
-  :init (global-undo-tree-mode))
+;; (use-package undo-tree                    ; Enable undo-tree, sane undo/redo behavior
+;;   :init (global-undo-tree-mode))
 
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
@@ -112,34 +112,37 @@
 
 (setq org-startup-with-inline-images t)
 (setq org-startup-with-latex-preview t)
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
-;; automatically preview latex
-(defun krofna-hack ()
-  (when (looking-back (rx "$ "))
-    (save-excursion
-      (backward-char 1)
-      (org-toggle-latex-fragment))))
+; (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
 
-(add-hook 'org-mode-hook
-	  (lambda ()
-	    (org-cdlatex-mode)
-	    (add-hook 'post-self-insert-hook #'krofna-hack 'append 'local)))
+; useful for high-res displays
 (setq org-latex-create-formula-image-program 'dvisvgm)
 
+(setq org-agenda-files '("~/org"))
+
+(setq org-agenda-custom-commands
+  '(("n" . "Search in notes")
+    ("nt" "Note tags search" tags ""
+     ((org-agenda-files (file-expand-wildcards "~/org/*.org"))))
+    ("ns" "Note full text search" search ""
+     ((org-agenda-files (file-expand-wildcards "~/org/*.org"))))))
+
+
+;; misc
 
 (load-theme 'spacemacs-dark t)
-;; org-drill
-;;
-;; (add-to-list 'load-path "~/.emacs.d/lisp/")
-;; (require 'org-learn)
-;; (require 'org-drill)
-;; (setq org-drill-spaced-repetition-algorithm 'sm2)
+
+; disable electric '_' inside latex equations
+(defun my-after-load-cdlatex ()
+  (define-key cdlatex-mode-map "_" nil)
+  t)
+(eval-after-load "cdlatex" '(my-after-load-cdlatex))
 
 (use-package undo-fu
   :config
   (global-undo-tree-mode -1)
   (define-key evil-normal-state-map "u" 'undo-fu-only-undo)
-  (define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo))
+  (define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo)
+  )
 
 ;; evil
 (use-package evil
@@ -148,13 +151,8 @@
   (setq evil-want-integration t)
   (setq evil-want-keybinding nil)
   (setq evil-undo-system 'undo-fu)
-  (with-eval-after-load 'evil-maps
-    (define-key evil-motion-state-map (kbd "SPC") nil)
-    (define-key evil-motion-state-map (kbd "RET") nil)
-    (define-key evil-motion-state-map (kbd "TAB") nil))
   :config
   (evil-mode 1))
-
 
 (use-package evil-collection
   :after evil
