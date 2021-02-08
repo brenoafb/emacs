@@ -89,10 +89,6 @@
 ;;; Lockfiles unfortunately cause more pain than benefit
 (setq create-lockfiles nil)
 
-;;; Load wheatgrass as the default theme if one is not loaded already
-(if (not custom-enabled-themes)
-    (load-theme 'wheatgrass t))
-
 ;; font
 (set-face-attribute 'default nil
 		    :family "Fira Code"
@@ -129,8 +125,6 @@
 
 ;; misc
 
-(load-theme 'spacemacs-dark t)
-
 ; disable electric '_' inside latex equations
 (defun my-after-load-cdlatex ()
   (define-key cdlatex-mode-map "_" nil)
@@ -160,12 +154,12 @@
   :config
   (evil-collection-init))
 
-;; soothe theme
 ; (use-package soothe-theme
-;   :ensure t
-;   :init (load-theme 'soothe t))
-(use-package soothe-theme
-  :ensure t)
+;   :ensure t)
+
+(use-package spacemacs-theme
+  :ensure t
+  :init (load-theme 'spacemacs-dark t))
 
 (use-package which-key
   :ensure t
