@@ -50,11 +50,11 @@
 (setq ring-bell-function 'ignore)         ; Disable bell sound
 (fset 'yes-or-no-p 'y-or-n-p)             ; y-or-n-p makes answering questions faster
 (show-paren-mode 1)                       ; Show closing parens by default
-(setq linum-format "%4d ")                ; Prettify line number format
-(add-hook 'prog-mode-hook                 ; Show line numbers in programming modes
-	  (if (fboundp 'display-line-numbers-mode)
-	      #'display-line-numbers-mode
-	    #'linum-mode))
+; (setq linum-format "%4d ")                ; Prettify line number format
+; (add-hook 'prog-mode-hook                 ; Show line numbers in programming modes
+;	  (if (fboundp 'display-line-numbers-mode)
+;	      #'display-line-numbers-mode
+;	    #'linum-mode))
 ;; (use-package undo-tree                    ; Enable undo-tree, sane undo/redo behavior
 ;;   :init (global-undo-tree-mode))
 
@@ -97,18 +97,10 @@
 		    :width 'normal)
 
 ;; orgmode
-;; load org-babel language if needed
-(defadvice org-babel-execute-src-block (around load-language nil activate)
-  "Load language if needed"
-  (let ((language (org-element-property :language (org-element-at-point))))
-    (unless (cdr (assoc (intern language) org-babel-load-languages))
-      (add-to-list 'org-babel-load-languages (cons (intern language) t))
-      (org-babel-do-load-languages 'org-babel-load-languages org-babel-load-languages))
-    ad-do-it))
-
+(setq org-link-frame-setup '((file . find-file)))
 (setq org-startup-with-inline-images t)
 (setq org-startup-with-latex-preview t)
-; (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
 
 ; useful for high-res displays
 (setq org-latex-create-formula-image-program 'dvisvgm)
@@ -121,22 +113,6 @@
      ((org-agenda-files (file-expand-wildcards "~/org/*.org"))))
     ("ns" "Note full text search" search ""
      ((org-agenda-files (file-expand-wildcards "~/org/*.org"))))))
-
-
-;; misc
-
-; disable electric '_' inside latex equations
-(defun my-after-load-cdlatex ()
-  (define-key cdlatex-mode-map "_" nil)
-  t)
-(eval-after-load "cdlatex" '(my-after-load-cdlatex))
-
-(use-package undo-fu
-  :config
-  (global-undo-tree-mode -1)
-  (define-key evil-normal-state-map "u" 'undo-fu-only-undo)
-  (define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo)
-  )
 
 ;; evil
 (use-package evil
@@ -154,12 +130,11 @@
   :config
   (evil-collection-init))
 
-; (use-package soothe-theme
-;   :ensure t)
-
-(use-package spacemacs-theme
-  :ensure t
-  :init (load-theme 'spacemacs-dark t))
+(use-package undo-fu
+  :after evil
+  :config
+  (define-key evil-normal-state-map "u" 'undo-fu-only-undo)
+  (define-key evil-normal-state-map "\C-r" 'undo-fu-only-redo))
 
 (use-package which-key
   :ensure t
@@ -218,6 +193,14 @@
   :config
   (helm-projectile-on))
 
+(use-package org-bullets
+  :straight
+  (org-bullets
+   :type git
+   :host github
+   :repo "saboF/org-bullets")
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 
 (use-package haskell-mode
   :ensure t
@@ -230,45 +213,33 @@
   :config
   (add-hook 'haskell-mode-hook #'hindent-mode))
 
-(use-package emojify
-  :hook (after-init . global-emojify-mode))
-
 (use-package pdf-tools
   :magic ("%PDF" . pdf-view-mode)
   :config
   (pdf-tools-install :no-query))
 
-(use-package ob-racket
+(use-package hydra)
+(use-package org-fc
   :straight
-  (ob-racket
-   :type git
-   :host github
-   :repo "xchrishawk/ob-racket"))
+  (org-fc
+   :type git :repo "https://git.sr.ht/~l3kn/org-fc"
+   :files (:defaults "awk" "demo.org"))
+  :custom
+  (org-fc-directories '("~/org/"))
+  :config
+  (require 'org-fc-hydra)
+  (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
+    (kbd "RET") 'org-fc-review-flip
+    (kbd "n") 'org-fc-review-flip
+    (kbd "s") 'org-fc-review-suspend-card
+    (kbd "q") 'org-fc-review-quit)
 
-					; org-fc
-;;  (use-package hydra)
-;;  (use-package org-fc
-;;    :straight
-;;    (org-fc
-;;     :type git :repo "https://git.sr.ht/~l3kn/org-fc"
-;;     :files (:defaults "awk" "demo.org"))
-;;    :custom
-;;    (org-fc-directories '("~/org/"))
-;;    :config
-;;    (require 'org-fc-hydra
-;;    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
-;;    (kbd "RET") 'org-fc-review-flip
-;;    (kbd "n") 'org-fc-review-flip
-;;    (kbd "s") 'org-fc-review-suspend-card
-;;    (kbd "q") 'org-fc-review-quit)
-;;
-;;    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
-;;      (kbd "a") 'org-fc-review-rate-again
-;;      (kbd "h") 'org-fc-review-rate-hard
-;;      (kbd "g") 'org-fc-review-rate-good
-;;      (kbd "e") 'org-fc-review-rate-easy
-;;      (kbd "s") 'org-fc-review-suspend-card
-;;      (kbd "q") 'org-fc-review-quit)
-;;    (setq org-fc-directories '("~/org/"))))
+  (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
+    (kbd "a") 'org-fc-review-rate-again
+    (kbd "h") 'org-fc-review-rate-hard
+    (kbd "g") 'org-fc-review-rate-good
+    (kbd "e") 'org-fc-review-rate-easy
+    (kbd "s") 'org-fc-review-suspend-card
+    (kbd "q") 'org-fc-review-quit))
 
-;; init.el ends here
+;;; init.el ends here
