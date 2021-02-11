@@ -100,7 +100,7 @@
 (setq org-link-frame-setup '((file . find-file)))
 (setq org-startup-with-inline-images t)
 (setq org-startup-with-latex-preview t)
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
+;; (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
 
 ; useful for high-res displays
 (setq org-latex-create-formula-image-program 'dvisvgm)
@@ -241,5 +241,26 @@
     (kbd "e") 'org-fc-review-rate-easy
     (kbd "s") 'org-fc-review-suspend-card
     (kbd "q") 'org-fc-review-quit))
+
+(use-package lsp-mode
+  :init
+  ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
+  (setq lsp-keymap-prefix "C-c l")
+  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
+	 (haskell-mode . lsp)
+	 (python-mode . lsp)
+	 (js-mode . lsp)
+	 (c-mode . lsp)
+	 ;; if you want which-key integration
+	 (lsp-mode . lsp-enable-which-key-integration))
+  :config
+  (add-hook 'haskell-mode-hook #'lsp)
+  (add-hook 'haskell-literate-mode-hook #'lsp)
+  :commands lsp)
+
+;; optionally
+(use-package lsp-ui :commands lsp-ui-mode)
+;; if you are helm user
+(use-package helm-lsp :commands helm-lsp-workspace-symbol)
 
 ;;; init.el ends here
