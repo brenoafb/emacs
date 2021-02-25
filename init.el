@@ -257,10 +257,16 @@
   (add-hook 'haskell-mode-hook #'lsp)
   (add-hook 'haskell-literate-mode-hook #'lsp)
   :commands lsp)
-
-;; optionally
 (use-package lsp-ui :commands lsp-ui-mode)
-;; if you are helm user
 (use-package helm-lsp :commands helm-lsp-workspace-symbol)
+
+(use-package unicode-fonts
+   :ensure t
+   :config
+    (unicode-fonts-setup))
+
+(use-package elixir-mode
+   :ensure t
+   :init (elixir-mode-setup))
 
 ;;; init.el ends here
